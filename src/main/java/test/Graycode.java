@@ -1,4 +1,5 @@
 package test;
+
 import java.util.Arrays;
 
 public class Graycode
@@ -38,7 +39,11 @@ public class Graycode
     public int[][] syntheic(int [][] data)//合并函数
     {
         int len_1=data.length,len_2=data[0].length,place,flag=0;
-        int[][] ret=data;
+        int[][] ret=new int[data.length][data[0].length];
+        for (int i = 0; i <data.length; i++)
+        {
+            ret[i] = Arrays.copyOf(data[i], data[i].length);
+        }
         int[] temp;
 
         for (int i=0;i<len_1;i++)
@@ -49,32 +54,41 @@ public class Graycode
                 if (place!=-1)
                 {
                     flag=1;
-                    temp=data[i];
+                    temp=Arrays.copyOf(data[j], data[j].length);
                     temp[place]=-1;
-                    ret[i]=temp;//将合并后结果存入
-                    for(int k=0;k<len_2;k++)
-                    {
-                        ret[j][k]=2;
-                    }
-                    ret=syntheic(ret);//递归重复调用
-                    break;
+                    ret[j]=temp;//将合并后结果存入
                 }
             }
         }
+        if (flag == 1)
+        {
+            ret=syntheic(ret);//递归重复调用
+        }
         if (flag==0)//在最后一轮递归去掉空的元素
         {
-            int count=0;
-            for(int i=0;i<len_1;i++)//count来计算不为空的行数
+            int count=ret.length;
+            int[] index = new int[ret.length];
+            for(int i=0;i<ret.length;i++)//count来计算不为空的行数
             {
-                if (ret[i][0]!=2)
-                    count++;
+                if (index[i] == 1)
+                {
+                    continue;
+                }
+                for(int j = i + 1; j < ret.length; j++)
+                {
+                    if (compareInt(ret[i], ret[j]) == true)
+                    {
+                        count--;
+                        index[j] = 1;
+                    }
+                }
             }
 
             int[][] temp_2=new int[count][len_2];
             int k=0;//下标
             for(int i=0;i<len_1;i++)
             {
-                if (ret[i][0]!=2)
+                if (index[i] == 0)
                 {
                     temp_2[k]=ret[i];
                     k=k+1;
@@ -82,10 +96,19 @@ public class Graycode
             }
             ret=temp_2;
         }
-        return  ret;
+        return ret;
     }
-
-
+    public static boolean compareInt(int[] a, int[] b)
+    {
+        for (int i = 0; i < a.length; i++)
+        {
+            if (a[i] != b[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
     public void setorder(int order)//后续可以调节格雷码的阶数
     {
         this.Model=init(order);;//设置格雷码的阶数
@@ -111,7 +134,7 @@ public class Graycode
             graycode[graycode.length - i - 1] = "1" + last[i];
 
         }
-        //System.out.println(Arrays.toString(graycode));
+//        System.out.println(Arrays.toString(graycode));
         return graycode;
     }   //以字符串的形式储存所有的n阶格雷码 后续进行转换时更高效
 
@@ -134,21 +157,107 @@ public class Graycode
         return ret;
     }
 
+    public String arrayToString(int[] a, int begin, int end)
+    {
+        String ret = "";
+        for (int i = begin; i < end; i++)
+        {
+            ret = ret + a[i];
+        }
+        return ret;
+    }
+
+    public int[] stringToArray(String s)
+    {
+        int[] ret = new int[s.length()];
+        for (int i = 0; i < s.length(); i++)
+        {
+            ret[i] = (int)(s.charAt(i)) - 48;
+        }
+        return ret;
+    }
+
+    public int min(int[] a)
+    {
+        int m = 0;
+        for (int i : a)
+        {
+            if (i < m)
+            {
+                m = i;
+            }
+        }
+        return m;
+    }
+
+    public int max(int[] a)
+    {
+        int m = 0;
+        for (int i : a)
+        {
+            if (i > m)
+            {
+                m = i;
+            }
+        }
+        return m;
+    }
+
+    // 输入矩形4个端点的格雷码，返回含有通配符的tk
+    public int[][] fourPoint(int[][] p)
+    {
+        int[] xIndex = new int[4];
+        int[] yIndex = new int[4];
+        for (int i = 0; i < xIndex.length; i++)
+        {
+            String xTmp = arrayToString(p[i], p[i].length / 2, p[i].length);
+            String yTmp = arrayToString(p[i], 0, p[i].length / 2);
+            for (int j = 0; j < Model.length; j++)
+            {
+                if (Model[j].equals(xTmp))
+                {
+                    xIndex[i] = j;
+                }
+                if (Model[j].equals(yTmp))
+                {
+                    yIndex[i] = j;
+                }
+            }
+        }
+        int[] x = new int[2];
+        int[] y = new int[2];
+        x[0] = min(xIndex);
+        x[1] = max(xIndex);
+        y[0] = min(yIndex);
+        y[1] = max(yIndex);
+
+        int[][] tk = new int[(y[1] - y[0] + 1) * (x[1] - x[0] + 1)][];
+        int k = 0;
+        for (int i = x[0]; i <= x[1]; i++)
+        {
+            for (int j = y[0]; j <= y[1]; j++)
+            {
+                String tmp = Model[j] + Model[i];
+                tk[k++] = stringToArray(tmp);
+            }
+        }
+        return syntheic(tk);
+    }
+
     public static void main(String[] arguments)
     {
-        Graycode test=new Graycode(3,1);//设定格雷码为三阶，即由三位数字组成
-        int[][] data={{0,0,1},{0,0,-1}};//测试数据 用于测试化简函数
+        Graycode test=new Graycode(2,1);
+        int[][] p = {{0,0,0,0}, {0,0,1,0}, {1,0,1,0}, {0,1,0,0}};
+        int[][] t = test.fourPoint(p);
+        System.out.println(Arrays.deepToString(t));
 
-        data=test.syntheic(data);//化简
+        int[][] p2 = {{0,0,0,0}, {0,0,1,1}, {0,1,1,1}, {1,0,0,0}};
+        int[][] t2 = test.fourPoint(p2);
+        System.out.println(Arrays.deepToString(t2));
 
+        int[][] p3 = {{0,0,0,0}, {0,0,1,1}, {1,1,1,1}, {1,1,0,0}};
+        int[][] t3 = test.fourPoint(p3);
+        System.out.println(Arrays.deepToString(t3));
 
-        for (int i=0;i<data.length;i++)//输出结果看看
-        {
-            for(int j=0;j<data[i].length;j++)
-            {
-                System.out.print(data[i][j]+" ");
-            }
-            System.out.print("\n");
-        }
     }
 }
